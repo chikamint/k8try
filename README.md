@@ -35,7 +35,7 @@
 
 ```bash
 apt update && apt install -y git make ansible && \
-git clone [https://github.com/chikamint/infra-gateway-automation.git] && \
+git clone https://github.com/chikamint/infra-gateway-automation.git && \
 cd infra-gateway-automation && \
 make setup
 
