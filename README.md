@@ -62,13 +62,14 @@ marzban cli admin create --sudo
 ---
 
 ## Структура проекта
-
 ```text
 .
-├── Makefile                # Интерактивный мастер установки
+├── Makefile                # Интерактивный мастер установки (Entry Point)
+├── marzban_fixed.sh        # Скрипт установки Marzban (с исправленными путями)
 ├── ansible/
-│   ├── deploy.yml          # Основной плейбук
+│   ├── deploy.yml          # Основной плейбук (Main logic)
 │   └── templates/
-│       ├── nginx.conf.j2       # Шаблон конфига Nginx 
+│       ├── nginx.conf.j2       # Шаблон конфига Nginx (Reverse Proxy)
+│       └── xray_config.json.j2 # Шаблон конфига Xray (Reality & Keys)
 ...
 ```
