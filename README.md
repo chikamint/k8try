@@ -43,6 +43,7 @@ make install-local
 ```
 Для установки удалённо используйте:
 ```bash
+make init
 make setup
 ...
 ```
