@@ -38,7 +38,15 @@ apt update && apt install -y git make ansible && \
 git clone https://github.com/chikamint/infra-gateway-automation.git && \
 cd infra-gateway-automation && \
 make setup
+...
+```
+После установки обязательно нужно создать учётную запись с помощью команды
 
+```bash
+marzban cli admin create --sudo
+...
+```
+ 
 ---
 
 ## Технический стек
@@ -62,3 +70,5 @@ make setup
 │   ├── deploy.yml          # Основной плейбук (Main logic)
 │   └── templates/
 │       ├── nginx.conf.j2       # Шаблон конфига Nginx (
+...
+```
