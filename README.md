@@ -64,12 +64,12 @@ marzban cli admin create --sudo
 ## Структура проекта
 ```text
 .
-├── Makefile                # Интерактивный мастер установки (Entry Point)
-├── marzban_fixed.sh        # Скрипт установки Marzban (с исправленными путями)
+├── Makefile                # Интерактивный мастер установки
+├── marzban_fixed.sh        # Скрипт установки Marzban
 ├── ansible/
-│   ├── deploy.yml          # Основной плейбук (Main logic)
+│   ├── deploy.yml          # Основной плейбук
 │   └── templates/
-│       ├── nginx.conf.j2       # Шаблон конфига Nginx (Reverse Proxy)
-│       └── xray_config.json.j2 # Шаблон конфига Xray (Reality & Keys)
+│       ├── nginx.conf.j2       # Шаблон конфига Nginx
+│       └── xray_config.json.j2 # Шаблон конфига Xray
 ...
 ```
