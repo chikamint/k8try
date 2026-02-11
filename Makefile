@@ -8,7 +8,7 @@ setup:
 	read -p "Введите Email для SSL: " email; \
 	ansible-playbook ansible/deploy.yml -i $$ip, -u root -k -e "domain=$$domain email=$$email"
 
-# 2. Для локальной установки (когда ты уже зашел на VPS по SSH)
+# 2. Для локальной установки
 install-local:
 	@echo "================================================="
 	@echo "    Local Infrastructure Deployment"
@@ -17,6 +17,6 @@ install-local:
 	read -p "Введите Email для SSL: " email; \
 	ansible-playbook ansible/deploy.yml -i "localhost," -c local -e "domain=$$domain email=$$email"
 
-# 3. Установка зависимостей (нужно запустить один раз на чистом сервере)
+# 3. Установка зависимостей для удалённой установки
 init:
 	sudo apt update && sudo apt install -y ansible sshpass
