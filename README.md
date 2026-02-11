@@ -70,7 +70,6 @@ marzban cli admin create --sudo
 
 ## Структура проекта
 ```text
-.
 ├── Makefile                # Интерактивный мастер установки
 ├── marzban_fixed.sh        # Скрипт установки Marzban
 ├── ansible/
