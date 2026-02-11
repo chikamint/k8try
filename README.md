@@ -55,8 +55,8 @@ marzban cli admin create --sudo
 ```
 
  ### 4. Настройка выполнена 
- Панель управления Marzban будет доступна по адресу: https://(домен)/dashboard
- Grafana будет доступна по адресу: https://(домен)/grafana
+ * **Панель управления Marzban:** https://(домен)/dashboard
+ * **Grafana:** https://(домен)/grafana
 
  
 ---
