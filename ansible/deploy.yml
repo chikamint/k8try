@@ -1,86 +1,73 @@
-- hosts: all
+---
+- name: Деплой Marzban (Logic - Install -> Keys -> Config)
+  hosts: all
   become: yes
   vars:
-    domain: "example.com"
-    email: "admin@example.com"
+    # Переменные прилетают из Makefile, но для тестов можно раскомментировать:
+    # domain: "example.com"
+    # email: "admin@example.com"
 
   tasks:
-    - name: 1. Установка системных зависимостей
+    # --- ЭТАП 1: ПОДГОТОВКА ---
+    - name: 1. Установка системных утилит
       apt:
-        name: [curl, socat, git, docker.io, docker-compose, nginx, python3-pip]
+        name: [curl, socat, git, nginx, python3-pip, psmisc]
         update_cache: yes
         state: present
 
-    - name: 2. Предварительная загрузка образа Marzban (нужен для генерации ключей)
-      shell: "docker pull gozargah/marzban"
+    - name: 2. Установка Certbot
+      apt:
+        name: certbot
+        state: present
 
-    # --- БЛОК АВТОМАТИЧЕСКОЙ ГЕНЕРАЦИИ ---
+    - name: 3. Получение SSL сертификата
+      shell: |
+        systemctl stop nginx || true
+        certbot certonly --standalone -d {{ domain }} --email {{ email }} --agree-tos --non-interactive
+      args:
+        creates: "/etc/letsencrypt/live/{{ domain }}/fullchain.pem"
 
-    - name: 3.1 Генерация ключей Xray (x25519)
-      shell: "docker run --rm --entrypoint xray gozargah/marzban x25519"
-      register: xray_keys_output
+    # --- ЭТАП 2: УСТАНОВКА MARZBAN ---
+    - name: 4. Установка Marzban
+      script: ../marzban_fixed.sh install
 
-    - name: 3.2 Парсинг Private Key
+    # --- ЭТАП 3: ГЕНЕРАЦИЯ КЛЮЧЕЙ НА ЖИВОЙ СИСТЕМЕ ---
+    - name: 5. Генерация ключей Xray внутри контейнера
+      shell: docker exec marzban-marzban-1 xray x25519
+      register: xray_keys_raw
+
+    - name: 6. Парсинг ключей в переменные
       set_fact:
-        # Берем первую строку вывода, удаляем "Private Key: " и пробелы
-        xray_private_key: "{{ xray_keys_output.stdout_lines[0] | regex_replace('Private Key: ', '') | trim }}"
-        # Можно вывести Public Key в лог, если нужно, он во второй строке
+        xray_private_key: "{{ xray_keys_raw.stdout | regex_search('Private key: (.*)', '\\1') | first | trim }}"
+        xray_public_key: "{{ xray_keys_raw.stdout | regex_search('Public key: (.*)', '\\1') | first | trim }}"
+        # Генерируем Short ID силами Ansible
+        xray_short_id: "{{ lookup('password', '/dev/null chars=hex length=16') }}"
 
-    - name: 3.3 Генерация ShortId (openssl)
-      shell: "openssl rand -hex 8"
-      register: short_id_output
-
-    - name: 3.4 Сохранение ShortId в переменную
-      set_fact:
-        xray_short_id: "{{ short_id_output.stdout | trim }}"
-
-    - name: 3.5 Вывод сгенерированных данных (для проверки)
+    - name: 7. Вывод ключей (Сохрани их!)
       debug:
         msg:
-          - "Сгенерирован Private Key: {{ xray_private_key }}"
-          - "Сгенерирован ShortId: {{ xray_short_id }}"
+          - "Private Key: {{ xray_private_key }}"
+          - "Public Key:  {{ xray_public_key }}"
+          - "Short ID:    {{ xray_short_id }}"
 
-    # --- КОНЕЦ БЛОКА ГЕНЕРАЦИИ ---
-
-    - name: 4. Установка acme.sh (SSL инструмент)
-      shell: "curl https://get.acme.sh | sh -s email={{ email }}"
-      args:
-        creates: /root/.acme.sh/acme.sh
-
-    - name: 5. Остановка Nginx перед выпуском сертификата
-      service: name=nginx state=stopped
-
-    - name: 6. Выпуск SSL сертификата (Standalone)
-      shell: "/root/.acme.sh/acme.sh --issue --standalone -d {{ domain }} --force"
-      register: cert_issue
-      failed_when: "'Skip' not in cert_issue.stdout and cert_issue.rc != 0"
-
-    - name: 7. Установка панели Marzban
-      shell: "bash -c \"$(curl -sL https://github.com/Gozargah/Marzban-scripts/raw/master/marzban.sh)\" @ install"
-      args:
-        creates: /opt/marzban/docker-compose.yml
-
-    - name: 8. Применение кастомного конфига Xray (с подстановкой ключей)
+    # --- ЭТАП 4: ПРИМЕНЕНИЕ КОНФИГУРАЦИИ ---
+    - name: 8. Заливаем правильный конфиг Xray
       template:
-        src: templates/xray_config.json.j2
+        src: xray_config.json.j2
         dest: /var/lib/marzban/xray_config.json
-      # Теперь Ansible возьмет переменные, которые мы сгенерировали выше, и вставит их в файл
 
     - name: 9. Настройка Nginx
       template:
-        src: templates/nginx.conf.j2
+        src: nginx.conf.j2
         dest: /etc/nginx/sites-available/default
-      notify: Reload Nginx
 
-    - name: 10. Настройка ENV файла Marzban
-      lineinfile:
-        path: /opt/marzban/.env
-        regexp: "{{ item.regexp }}"
-        line: "{{ item.line }}"
-      loop:
-        - { regexp: '^UVICORN_SSL_CERTFILE', line: '# UVICORN_SSL_CERTFILE' }
-        - { regexp: '^UVICORN_SSL_KEYFILE', line: '# UVICORN_SSL_KEYFILE' }
+    - name: 10. Включение конфига Nginx
+      file:
+        src: /etc/nginx/sites-available/default
+        dest: /etc/nginx/sites-enabled/default
+        state: link
 
+    # --- ЭТАП 5: ДОПОЛНИТЕЛЬНЫЕ СЕРВИСЫ ---
     - name: 11. Запуск Grafana
       docker_container:
         name: grafana
@@ -88,12 +75,20 @@
         ports:
           - "3000:3000"
         restart_policy: always
+        env:
+          GF_SERVER_ROOT_URL: "https://{{ domain }}/grafana/"
+          GF_SERVER_SERVE_FROM_SUB_PATH: "true"
 
-    - name: 12. Финальный рестарт сервисов
+    # --- ЭТАП 6: ФИНАЛ ---
+    - name: 12. Финальный рестарт (Применяем всё)
       shell: |
+
+        fuser -k 443/tcp || true
         marzban restart
         systemctl restart nginx
+      async: 60
+      poll: 0
 
-  handlers:
-    - name: Reload Nginx
-      service: name=nginx state=reloaded
+    - name: 13. Инструкция
+      debug:
+        msg: "Готово! Теперь зайди на сервер и выполни: marzban cli admin create --sudo"

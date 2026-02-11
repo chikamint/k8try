@@ -1,14 +1,8 @@
-.PHONY: setup
-
 setup:
 	@echo "================================================="
-	@echo "   Infrastructure Deployment Wizard              "
+	@echo "   Infrastructure Deployment Wizard"
 	@echo "================================================="
-	@read -p "Введите IP адрес сервера (VPS): " IP; \
-	read -p "Введите ваш домен (например, name.duckdns.org): " DOMAIN; \
-	read -p "Введите Email для SSL: " EMAIL; \
-	echo "-------------------------------------------------"; \
-	echo "Начинаем установку на $$IP..."; \
-	echo "-------------------------------------------------"; \
-	ansible-playbook -i $$IP, ansible/deploy.yml -u root \
-		--extra-vars "domain=$$DOMAIN email=$$EMAIL"
+	@read -p "Введите IP адрес сервера (VPS): " ip; \
+	read -p "Введите ваш домен (например, name.duckdns.org): " domain; \
+	read -p "Введите Email для SSL: " email; \
+	ansible-playbook ansible/deploy.yml -i $$ip, -u root -k -e "domain=$$domain email=$$email"
