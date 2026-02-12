@@ -33,7 +33,7 @@
 
     # --- ЭТАП 2: УСТАНОВКА MARZBAN ---
     - name: 4. Установка Marzban
-      script: ../marzban_fixed.sh install
+      script: files/marzban_fixed.sh install
 
     # --- ЭТАП 3: ГЕНЕРАЦИЯ КЛЮЧЕЙ НА ЖИВОЙ СИСТЕМЕ ---
     - name: 5. Генерация ключей Xray внутри контейнера
