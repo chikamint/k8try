@@ -1,0 +1,29 @@
+pipeline {
+    agent any
+    stages {
+        stage('Validate IaC') {
+            steps {
+                dir('terraform/digitalocean') {
+                    sh 'terraform init && terraform validate'
+                }
+            }
+        }
+        stage('Helm Lint') {
+            steps {
+                sh 'helm lint k8s/charts/infra-gateway'
+            }
+        }
+        stage('Deploy to K8s') {
+            steps {
+                // Деплоим чарт в кластер
+                sh 'helm upgrade --install gateway k8s/charts/infra-gateway --namespace prod'
+            }
+        }
+        stage('Legacy Sync') {
+            steps {
+                // Если нужно обновить старый сервер в OVH
+                sh 'ansible-playbook legacy/ansible/deploy.yml -i legacy/inventory.ini'
+            }
+        }
+    }
+}

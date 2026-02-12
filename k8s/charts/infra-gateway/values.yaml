@@ -1,0 +1,17 @@
+replicaCount: 1
+image:
+  repository: gozargah/marzban
+  tag: latest
+
+# Переносим переменные из твоего Ansible
+domain: "proxyniderland.duckdns.org"
+xray:
+  port: 8443
+  # Ключи, которые раньше генерировал Ansible, теперь в конфиге
+  privateKey: "GENERATE_VIA_SECRET" 
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"

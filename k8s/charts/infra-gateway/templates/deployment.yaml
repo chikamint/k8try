@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: marzban
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: marzban
+  template:
+    metadata:
+      labels:
+        app: marzban
+    spec:
+      containers:
+        - name: marzban
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: config
+              mountPath: /var/lib/marzban/xray_config.json
+              subPath: xray_config.json
+      volumes:
+        - name: config
+          configMap:
+            name: xray-config

@@ -1,0 +1,15 @@
+replicaCount: 2
+image:
+  repository: gozargah/marzban
+  tag: latest
+service:
+  type: ClusterIP
+  port: 80
+ingress:
+  enabled: true
+  className: "nginx"
+  hosts:
+    - host: proxyniderland.duckdns.org
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
